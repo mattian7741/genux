@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dynamic Table</title>
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.20/css/jquery.dataTables.min.css">
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js"></script>
+    <script>
+    $(document).ready(function() {
+        $('#data_table').DataTable({
+            'ajax': {
+                'url': '/data',
+                'dataSrc': ''  // Set dataSrc to an empty string to use a plain array
+            },
+            'columns': [
+                { 'data': 'id' },
+                { 'data': 'name' },
+                { 'data': 'age' }
+            ]
+        });
+    });
+
+    </script>
+</head>
+<body>
+    <table id="data_table" class="display">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Age</th>
+            </tr>
+        </thead>
+    </table>
+</body>
+</html>
+
