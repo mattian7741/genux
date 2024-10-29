@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Merchants</title>
+</head>
+<body>
+    <h2>Merchants Table</h2>
+    {% with data_url=url_for('merchant_data') %}
+        {% include "table_view.html" %}
+    {% endwith %}
+</body>
+</html>
