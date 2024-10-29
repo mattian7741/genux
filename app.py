@@ -8,12 +8,21 @@ def index():
 
 @app.route('/data')
 def data():
-    # Dummy data - replace with your database connection logic
-    return jsonify([
-        {'id': 1, 'name': 'Alice', 'age': 30},
-        {'id': 2, 'name': 'Bob', 'age': 25},
-        {'id': 3, 'name': 'Charlie', 'age': 35}
-    ])
+    response = {
+        'columns': [
+            {'data': 'id', 'title': 'ID'},
+            {'data': 'name', 'title': 'Name'},
+            {'data': 'age', 'title': 'Age'},
+            {'data': 'sign', 'title': 'Sign'}
+        ],
+        'data': [
+            {'id': 1, 'name': 'Alice', 'age': 30, 'sign': 'Aries'},
+            {'id': 2, 'name': 'Bob', 'age': 25, 'sign': 'Sagitarius'},
+            {'id': 3, 'name': 'Charlie', 'age': 35, 'sign': 'Cancer'},
+            {'id': 4, 'name': 'Steve', 'age': 28, 'sign': 'Scorpio'}
+        ]
+    }
+    return jsonify(response)
 
 if __name__ == '__main__':
     app.run(port=8001, debug=True)

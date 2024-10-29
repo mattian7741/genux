@@ -8,31 +8,51 @@
     <script src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js"></script>
     <script>
     $(document).ready(function() {
-        $('#data_table').DataTable({
-            'ajax': {
-                'url': '/data',
-                'dataSrc': ''  // Set dataSrc to an empty string to use a plain array
-            },
-            'columns': [
-                { 'data': 'id' },
-                { 'data': 'name' },
-                { 'data': 'age' }
-            ]
-        });
-    });
+        fetch('/data')
+        .then(response => response.json())
+        .then(json => {
+            var columns = json.columns.map(col => ({
+                data: col.data,
+                title: col.title
+            }));
 
+            // Now initialize DataTable
+            $('#data_table').DataTable({
+                data: json.data,
+                columns: columns
+            });
+
+            // Dynamically create the dropdown filters after initializing DataTable
+            var table = $('#data_table').DataTable();
+            table.columns().every(function() {
+                var column = this;
+                var select = $('<select><option value=""></option></select>')
+                    .appendTo($(column.header()).empty())
+                    .on('change', function() {
+                        var val = $.fn.dataTable.util.escapeRegex(
+                            $(this).val()
+                        );
+                        column
+                            .search(val ? '^' + val + '$' : '', true, false)
+                            .draw();
+                    });
+
+                column.data().unique().sort().each(function(d) {
+                    select.append('<option value="' + d + '">' + d + '</option>')
+                });
+            });
+        })
+        .catch(error => console.error('Error loading the data:', error));
+    });
     </script>
 </head>
 <body>
     <table id="data_table" class="display">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Name</th>
-                <th>Age</th>
-            </tr>
-        </thead>
-    </table>
+    <thead>
+        <tr></tr> <!-- Column titles -->
+        <tr></tr> <!-- Filter dropdowns -->
+    </thead>
+</table>
+
 </body>
 </html>
-
