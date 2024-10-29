@@ -2,8 +2,21 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Dynamic Table</title>
+    <title>Dynamic Table with Filters</title>
     <link rel="stylesheet" href="https://cdn.datatables.net/1.10.20/css/jquery.dataTables.min.css">
+    <style>
+        /* Styling for dropdowns */
+        #data_table thead select {
+            width: 100%;
+            padding: 5px;
+            margin-top: 5px;
+        }
+        #error-message {
+            color: red;
+            font-weight: bold;
+            display: none;
+        }
+    </style>
     <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
     <script src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js"></script>
     <script>
@@ -11,48 +24,54 @@
         fetch('/data')
         .then(response => response.json())
         .then(json => {
-            var columns = json.columns.map(col => ({
-                data: col.data,
-                title: col.title
-            }));
+            // Clear any existing rows in the thead to prevent duplication
+            $('#data_table thead').empty();
+            
+            // Create header row and filter row
+            var thead = $('#data_table thead');
+            var headerRow = $('<tr></tr>').appendTo(thead);
+            var filterRow = $('<tr></tr>').appendTo(thead);
 
-            // Now initialize DataTable
-            $('#data_table').DataTable({
-                data: json.data,
-                columns: columns
+            json.columns.forEach(col => {
+                $('<th>').appendTo(filterRow);  // Placeholder for filter dropdown
             });
 
-            // Dynamically create the dropdown filters after initializing DataTable
-            var table = $('#data_table').DataTable();
+            // Initialize DataTable with data and columns, and ensure any existing table is cleared
+            var table = $('#data_table').DataTable({
+                destroy: true,  // Clears any previous DataTable initialization
+                data: json.data,
+                columns: json.columns,
+                autoWidth: false  // Prevents DataTables from auto-adjusting column width
+            });
+
+            // Add dropdown filters in filterRow
             table.columns().every(function() {
                 var column = this;
-                var select = $('<select><option value=""></option></select>')
-                    .appendTo($(column.header()).empty())
+                var select = $('<select><option value="">Filter...</option></select>')
+                    .appendTo(filterRow.find('th').eq(column.index()))
                     .on('change', function() {
-                        var val = $.fn.dataTable.util.escapeRegex(
-                            $(this).val()
-                        );
-                        column
-                            .search(val ? '^' + val + '$' : '', true, false)
-                            .draw();
+                        var val = $.fn.dataTable.util.escapeRegex($(this).val());
+                        column.search(val ? '^' + val + '$' : '', true, false).draw();
                     });
 
+                // Populate each dropdown with unique values from column data
                 column.data().unique().sort().each(function(d) {
-                    select.append('<option value="' + d + '">' + d + '</option>')
+                    select.append('<option value="' + d + '">' + d + '</option>');
                 });
             });
         })
-        .catch(error => console.error('Error loading the data:', error));
+        .catch(error => {
+            console.error('Error loading the data:', error);
+            $('#error-message').show().text('Error loading data, please try again later.');
+        });
     });
     </script>
 </head>
 <body>
+    <h2>Dynamic Table with Filters</h2>
+    <p id="error-message">Error loading data, please try again later.</p>
     <table id="data_table" class="display">
-    <thead>
-        <tr></tr> <!-- Column titles -->
-        <tr></tr> <!-- Filter dropdowns -->
-    </thead>
-</table>
-
+        <thead></thead>
+    </table>
 </body>
 </html>
