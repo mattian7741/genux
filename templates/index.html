@@ -1,9 +1,11 @@
+<!-- STABLE -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Dynamic Table with Filters</title>
+    <title>Dynamic Table with Multi-Select Filters</title>
     <link rel="stylesheet" href="https://cdn.datatables.net/1.10.20/css/jquery.dataTables.min.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
     <style>
         /* Styling for dropdowns */
         #data_table thead select {
@@ -19,6 +21,7 @@
     </style>
     <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
     <script src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
     <script>
     $(document).ready(function() {
         fetch('/data')
@@ -44,20 +47,32 @@
                 autoWidth: false  // Prevents DataTables from auto-adjusting column width
             });
 
-            // Add dropdown filters in filterRow
+            // Add multi-select dropdown filters in filterRow
             table.columns().every(function() {
                 var column = this;
-                var select = $('<select><option value="">Filter...</option></select>')
+                var select = $('<select multiple="multiple" style="width: 100%;"><option value="">Filter...</option></select>')
                     .appendTo(filterRow.find('th').eq(column.index()))
                     .on('change', function() {
-                        var val = $.fn.dataTable.util.escapeRegex($(this).val());
-                        column.search(val ? '^' + val + '$' : '', true, false).draw();
+                        // Get selected values as an array
+                        var selectedValues = $(this).val();
+                        
+                        if (selectedValues && selectedValues.length > 0) {
+                            // Use regex to match any of the selected values
+                            var regex = selectedValues.map(val => '^' + $.fn.dataTable.util.escapeRegex(val) + '$').join('|');
+                            column.search(regex, true, false).draw();
+                        } else {
+                            // If no value is selected, clear the filter
+                            column.search('').draw();
+                        }
                     });
 
                 // Populate each dropdown with unique values from column data
                 column.data().unique().sort().each(function(d) {
                     select.append('<option value="' + d + '">' + d + '</option>');
                 });
+
+                // Apply Select2 to enable multi-select functionality
+                select.select2({ placeholder: "Filter..." });
             });
         })
         .catch(error => {
@@ -68,7 +83,7 @@
     </script>
 </head>
 <body>
-    <h2>Dynamic Table with Filters</h2>
+    <h2>Dynamic Table with Multi-Select Filters</h2>
     <p id="error-message">Error loading data, please try again later.</p>
     <table id="data_table" class="display">
         <thead></thead>
