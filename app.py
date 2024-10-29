@@ -16,10 +16,10 @@ def data():
             {'data': 'sign', 'title': 'Sign'}
         ],
         'data': [
-            {'id': 1, 'name': 'Alice', 'age': 30, 'sign': 'Aries'},
+            {'id': 1, 'name': 'Alice', 'age': 28, 'sign': 'Aries'},
             {'id': 2, 'name': 'Bob', 'age': 25, 'sign': 'Sagitarius'},
             {'id': 3, 'name': 'Charlie', 'age': 35, 'sign': 'Cancer'},
-            {'id': 4, 'name': 'Steve', 'age': 28, 'sign': 'Scorpio'}
+            {'id': 4, 'name': 'Bob', 'age': 28, 'sign': 'Scorpio'}
         ]
     }
     return jsonify(response)
