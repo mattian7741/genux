@@ -6,6 +6,8 @@
 </head>
 <body>
     <h2>Merchants Table</h2>
+    <a href="{{ url_for('transactions') }}">Transactions</a> <!-- Link to Transactions -->
+    <br><br>
     {% with data_url=url_for('merchant_data') %}
         {% include "table_view.html" %}
     {% endwith %}
