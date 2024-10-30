@@ -4,36 +4,60 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    // Mock data for the chart
-    const labels = ['January', 'February', 'March', 'April', 'May', 'June'];
-    const data = {
-        labels: labels,
-        datasets: [{
-            label: 'Sample Data',
-            backgroundColor: 'rgba(75, 192, 192, 0.2)',
-            borderColor: 'rgba(75, 192, 192, 1)',
-            data: [65, 59, 80, 81, 56, 55, 40],
-        }]
-    };
+    document.addEventListener('DOMContentLoaded', function() {
+        let chart;
+        let isChartInitialized = false;  // State to check if the chart is initialized
+        let updatePending = false;       // Flag to hold if an update is pending
 
-    // Chart configuration
-    const config = {
-        type: 'line',
-        data: data,
-        options: {
-            responsive: true,
-            maintainAspectRatio: false, // Allows container's height to apply
-            scales: {
-                y: {
-                    beginAtZero: true
+        function createChart() {
+            const ctx = document.getElementById('myChart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: getChartData(), // Load initial data
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
                 }
+            });
+            isChartInitialized = true;  // Set the chart as initialized
+            if (updatePending) {
+                updateChartData();  // If an update was pending, execute it now
             }
         }
-    };
 
-    // Render the chart
-    const myChart = new Chart(
-        document.getElementById('myChart'),
-        config
-    );
+        function updateChartData() {
+            if (!isChartInitialized) {
+                updatePending = true;  // Set the update as pending if chart isn't ready
+                return;
+            }
+            const newData = getChartData();
+            chart.data.labels = newData.labels;
+            chart.data.datasets = newData.datasets;
+            chart.update();
+            updatePending = false;  // Reset the pending update flag
+        }
+
+        document.addEventListener('DataTableLoaded', function () {
+            if (typeof getChartData !== 'function') {
+                console.error('getChartData function is not defined. Ensure it is available in the parent template.');
+                return;
+            }
+            createChart();
+        });
+
+        // Update chart on table filter change
+        $('#data_table').on('search.dt', function () {
+            updateChartData();
+        });
+
+        // Update chart after sorting or page changes
+        $('#data_table').on('order.dt page.dt', function () {
+            updateChartData();
+        });
+    });
 </script>

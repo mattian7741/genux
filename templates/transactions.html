@@ -9,10 +9,38 @@
     <a href="{{ url_for('merchants') }}">Go to Merchants</a>
     <br><br>
     
-    {% include "chart_view.html" %} <!-- Include the chart view -->
+    <!-- Include the chart view -->
+    {% include "chart_view.html" %}
+    
+    <!-- Include the table view with transaction data URL -->
     {% with data_url=url_for('transaction_data') %}
         {% include "table_view.html" %}
     {% endwith %}
-    
+
+    <script>
+        // Define a function that pulls data from the visible table rows
+        function getChartData() {
+            const table = $('#data_table').DataTable();
+            const data = table.rows({ filter: 'applied' }).data(); // Get visible rows
+
+            // Extract the date and value columns from visible rows
+            const labels = [];
+            const values = [];
+            data.each(row => {
+                labels.push(row.date);
+                values.push(row.value);
+            });
+
+            return {
+                labels: labels,
+                datasets: [{
+                    label: 'Transaction Data',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    data: values
+                }]
+            };
+        }
+    </script>
 </body>
 </html>

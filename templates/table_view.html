@@ -1,3 +1,4 @@
+<!-- STABLE -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -45,8 +46,12 @@
                 autoWidth: false,
                 searching: true,
                 paging: true,
-                order: []
-            });
+                order: [],
+                initComplete: function(settings, json) {
+                    // Dispatch the event to indicate the DataTable is fully loaded
+                    document.dispatchEvent(new CustomEvent('DataTableLoaded'));
+            }
+        });
 
             let activeSortColumns = [];
 
