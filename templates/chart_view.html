@@ -11,19 +11,32 @@
 
         function createChart() {
             const ctx = document.getElementById('myChart').getContext('2d');
+            const chartData = getChartData(); // Load initial data
+            const chartOptions = {
+                responsive: true,
+                maintainAspectRatio: false
+            };
+
+            // Apply specific options based on chart type
+            if (['bar', 'line'].includes(chartType)) {
+                chartOptions.scales = {
+                    x: {
+                        stacked: chartType === 'bar',
+                    },
+                    y: {
+                        beginAtZero: true,
+                        stacked: chartType === 'bar'
+                    }
+                };
+            }
+
+            // Create the chart with conditional configuration
             chart = new Chart(ctx, {
-                type: chartType,  // Use the specified chart type
-                data: getChartData(), // Load initial data
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: chartType === 'line' ? {
-                        y: {
-                            beginAtZero: true
-                        }
-                    } : {}
-                }
+                type: chartType,
+                data: chartData,
+                options: chartOptions
             });
+
             isChartInitialized = true;  // Set the chart as initialized
             if (updatePending) {
                 updateChartData();  // If an update was pending, execute it now
@@ -37,7 +50,9 @@
             }
             const newData = getChartData();
             chart.data.labels = newData.labels;
-            chart.data.datasets = newData.datasets;
+            chart.data.datasets.forEach((dataset, i) => {
+                dataset.data = newData.datasets[i].data;
+            });
             chart.update();
             updatePending = false;  // Reset the pending update flag
         }
