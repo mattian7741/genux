@@ -7,7 +7,7 @@ dir="${1:-.}"
 process_directory() {
     local current_dir="$1"
     # Markdown friendly prompt at the top of the output
-    echo "The following is an application. After you have reviewed it, do not respond except to acknowledge receipt of the information, after which I will provide instructions"
+    echo "Here is a complete listing of the project:"
     echo ""
     find "$current_dir" -type f \( \
         -name '*.py' -o -name '*.html' -o -name '*.js' -o -name '*.css' -o \
@@ -21,6 +21,10 @@ process_directory() {
         -exec echo '```' \; \
         -exec echo "" \; \
         -exec echo "" \;
+
+    echo "Your suggested changes should be provided as complete file."
+    echo ""
+    echo ""
 }
 
 # Export results to clipboard
