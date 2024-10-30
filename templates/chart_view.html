@@ -12,16 +12,16 @@
         function createChart() {
             const ctx = document.getElementById('myChart').getContext('2d');
             chart = new Chart(ctx, {
-                type: 'line',
+                type: chartType,  // Use the specified chart type
                 data: getChartData(), // Load initial data
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    scales: {
+                    scales: chartType === 'line' ? {
                         y: {
                             beginAtZero: true
                         }
-                    }
+                    } : {}
                 }
             });
             isChartInitialized = true;  // Set the chart as initialized
