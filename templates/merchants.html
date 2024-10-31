@@ -8,46 +8,21 @@
     <h2>Merchants Table</h2>
     <a href="{{ url_for('transactions') }}">Go to Transactions</a>
     <br><br>
-    
+
+    <!-- Define chart parameters -->
+    <script>
+        const chartType = 'pie';  // Pie chart
+        const xvalues = 'name';   // X-axis data key (labels for pie slices)
+        const yvalues = 'age';    // Y-axis data key (values for pie slices)
+        const groupby = null;     // No grouping for pie chart
+    </script>
+
     <!-- Include the chart view -->
     {% include "chart_view.html" %}
-    
+
     <!-- Include the table view with merchant data URL -->
     {% with data_url=url_for('merchant_data') %}
         {% include "table_view.html" %}
     {% endwith %}
-
-    <script>
-        // Define a function that returns hardcoded data for the chart
-        function getChartData() {
-            const table = $('#data_table').DataTable();
-            const data = table.rows({ filter: 'applied' }).data(); // Get visible rows
-
-            // Extract the name and age columns from visible rows
-            const labels = [];
-            const values = [];
-            data.each(row => {
-                labels.push(row.name);
-                values.push(row.age);
-            });
-
-            return {
-                labels: labels,
-                datasets: [{
-                    label: 'Merchant Age Data',
-                    backgroundColor: [
-                        'rgba(255, 99, 132, 0.2)',
-                        'rgba(54, 162, 235, 0.2)',
-                        'rgba(255, 206, 86, 0.2)',
-                        'rgba(75, 192, 192, 0.2)'
-                    ],
-                    data: values
-                }]
-            };
-        }
-
-        // Specify the chart type as 'pie'
-        const chartType = 'pie';
-    </script>
 </body>
 </html>

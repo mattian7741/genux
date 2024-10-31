@@ -8,68 +8,21 @@
     <h2>Transactions Table</h2>
     <a href="{{ url_for('merchants') }}">Go to Merchants</a>
     <br><br>
-    
+
+    <!-- Define chart parameters -->
+    <script>
+        const chartType = 'bar';  // Stacked bar chart
+        const xvalues = 'date';   // X-axis data key
+        const yvalues = 'value';  // Y-axis data key
+        const groupby = 'category';  // Group by category for stacking
+    </script>
+
     <!-- Include the chart view -->
     {% include "chart_view.html" %}
-    
+
     <!-- Include the table view with transaction data URL -->
     {% with data_url=url_for('transaction_data') %}
         {% include "table_view.html" %}
     {% endwith %}
-
-    <script>
-        // Define a function that pulls data from the visible table rows and organizes it for a stacked bar chart
-        function getChartData() {
-            const table = $('#data_table').DataTable();
-            const data = table.rows({ filter: 'applied' }).data(); // Get visible rows
-
-            // Organize data by category and accumulate values by date
-            const categoryData = {};
-            const allDates = new Set(); // To track all dates and ensure each dataset has an entry for each date
-
-            data.each(row => {
-                if (!categoryData[row.category]) {
-                    categoryData[row.category] = {};
-                }
-                if (!categoryData[row.category][row.date]) {
-                    categoryData[row.category][row.date] = 0;
-                }
-                categoryData[row.category][row.date] += row.value;
-                allDates.add(row.date);
-            });
-
-            // Sort dates to maintain consistent order
-            const sortedDates = Array.from(allDates).sort();
-
-            // Prepare datasets
-            const datasets = Object.keys(categoryData).map(category => {
-                const data = sortedDates.map(date => {
-                    return {x: date, y: categoryData[category][date] || 0}; // Use 0 if no data exists for this date in this category
-                });
-
-                return {
-                    label: category,
-                    backgroundColor: randomColor(), // Random color for each category, replace with specific if needed
-                    data: data
-                };
-            });
-
-            return {
-                labels: sortedDates, // Provide sorted dates as labels for the x-axis
-                datasets: datasets
-            };
-        }
-
-        // Generate random colors for categories
-        function randomColor() {
-            const r = Math.floor(Math.random() * 256);
-            const g = Math.floor(Math.random() * 256);
-            const b = Math.floor(Math.random() * 256);
-            return `rgba(${r}, ${g}, ${b}, 0.7)`;
-        }
-
-        // Specify the chart type as 'bar' and enable stacking
-        const chartType = 'bar';
-    </script>
 </body>
 </html>

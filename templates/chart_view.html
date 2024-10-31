@@ -6,55 +6,126 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         let chart;
-        let isChartInitialized = false;  // State to check if the chart is initialized
-        let updatePending = false;       // Flag to hold if an update is pending
+        let isChartInitialized = false;
+        let updatePending = false;
+
+        // Generate chart data based on provided parameters
+        function generateChartData(data, xvalues, yvalues, groupby = null) {
+            const groupedData = {};
+            const allXValues = new Set();
+
+            data.forEach(row => {
+                const xValue = row[xvalues];
+                const yValue = row[yvalues];
+                const group = groupby ? row[groupby] : 'default';
+
+                if (!groupedData[group]) {
+                    groupedData[group] = {};
+                }
+                if (!groupedData[group][xValue]) {
+                    groupedData[group][xValue] = 0;
+                }
+                groupedData[group][xValue] += yValue;
+                allXValues.add(xValue);
+            });
+
+            // Sort x-axis values for consistency
+            const sortedXValues = Array.from(allXValues).sort();
+
+            // Handle datasets based on chart type
+            if (chartType === 'pie') {
+                const pieData = [];
+                const labels = [];
+
+                // For pie charts, we don’t need groups; just sum values for each xValue
+                sortedXValues.forEach(x => {
+                    let total = 0;
+                    Object.keys(groupedData).forEach(group => {
+                        total += groupedData[group][x] || 0;
+                    });
+                    labels.push(x);
+                    pieData.push(total);
+                });
+
+                return {
+                    labels: labels,
+                    datasets: [{
+                        data: pieData,
+                        backgroundColor: labels.map(() => randomColor())
+                    }]
+                };
+            } else {
+                // For bar and line charts, create datasets per group
+                const datasets = Object.keys(groupedData).map(group => {
+                    const data = sortedXValues.map(x => ({
+                        x: x,
+                        y: groupedData[group][x] || 0
+                    }));
+
+                    return {
+                        label: group,
+                        backgroundColor: randomColor(),
+                        data: data
+                    };
+                });
+
+                return { labels: sortedXValues, datasets };
+            }
+        }
+
+        // Generate random colors for categories
+        function randomColor() {
+            const r = Math.floor(Math.random() * 256);
+            const g = Math.floor(Math.random() * 256);
+            const b = Math.floor(Math.random() * 256);
+            return `rgba(${r}, ${g}, ${b}, 0.7)`;
+        }
+
+        // Fetch and prepare chart data dynamically from the DataTable
+        function getChartData() {
+            const table = $('#data_table').DataTable();
+            const data = table.rows({ filter: 'applied' }).data().toArray();
+            return generateChartData(data, xvalues, yvalues, groupby);
+        }
 
         function createChart() {
             const ctx = document.getElementById('myChart').getContext('2d');
-            const chartData = getChartData(); // Load initial data
+            const chartData = getChartData();
             const chartOptions = {
                 responsive: true,
                 maintainAspectRatio: false
             };
 
-            // Apply specific options based on chart type
+            // Apply scales configuration only to applicable chart types
             if (['bar', 'line'].includes(chartType)) {
                 chartOptions.scales = {
-                    x: {
-                        stacked: chartType === 'bar',
-                    },
-                    y: {
-                        beginAtZero: true,
-                        stacked: chartType === 'bar'
-                    }
+                    x: { stacked: groupby !== null },
+                    y: { beginAtZero: true, stacked: groupby !== null }
                 };
             }
 
-            // Create the chart with conditional configuration
             chart = new Chart(ctx, {
                 type: chartType,
                 data: chartData,
                 options: chartOptions
             });
 
-            isChartInitialized = true;  // Set the chart as initialized
+            isChartInitialized = true;
             if (updatePending) {
-                updateChartData();  // If an update was pending, execute it now
+                updateChartData();
             }
         }
 
         function updateChartData() {
             if (!isChartInitialized) {
-                updatePending = true;  // Set the update as pending if chart isn't ready
+                updatePending = true;
                 return;
             }
             const newData = getChartData();
             chart.data.labels = newData.labels;
-            chart.data.datasets.forEach((dataset, i) => {
-                dataset.data = newData.datasets[i].data;
-            });
+            chart.data.datasets = newData.datasets;
             chart.update();
-            updatePending = false;  // Reset the pending update flag
+            updatePending = false;
         }
 
         document.addEventListener('DataTableLoaded', function () {
@@ -65,14 +136,7 @@
             createChart();
         });
 
-        // Update chart on table filter change
-        $('#data_table').on('search.dt', function () {
-            updateChartData();
-        });
-
-        // Update chart after sorting or page changes
-        $('#data_table').on('order.dt page.dt', function () {
-            updateChartData();
-        });
+        $('#data_table').on('search.dt', updateChartData);
+        $('#data_table').on('order.dt page.dt', updateChartData);
     });
 </script>
