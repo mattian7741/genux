@@ -9,42 +9,24 @@
         let isChartInitialized = false;
         let updatePending = false;
 
-        // Generate chart data based on provided parameters
-        function generateChartData(data, xvalues, yvalues, groupby = null) {
-            const groupedData = {};
-            const allXValues = new Set();
+        class ChartBase {
+            constructor(data, xvalues, yvalues) {
+                this.data = data;
+                this.xvalues = xvalues;
+                this.yvalues = yvalues;
+            }
+        }
 
-            data.forEach(row => {
-                const xValue = row[xvalues];
-                const yValue = row[yvalues];
-                const group = groupby ? row[groupby] : 'default';
-
-                if (!groupedData[group]) {
-                    groupedData[group] = {};
-                }
-                if (!groupedData[group][xValue]) {
-                    groupedData[group][xValue] = 0;
-                }
-                groupedData[group][xValue] += yValue;
-                allXValues.add(xValue);
-            });
-
-            // Sort x-axis values for consistency
-            const sortedXValues = Array.from(allXValues).sort();
-
-            // Handle datasets based on chart type
-            if (chartType === 'pie') {
+        class PieChart extends ChartBase {
+            generateChartData() {
                 const pieData = [];
                 const labels = [];
 
-                // For pie charts, we don’t need groups; just sum values for each xValue
-                sortedXValues.forEach(x => {
-                    let total = 0;
-                    Object.keys(groupedData).forEach(group => {
-                        total += groupedData[group][x] || 0;
-                    });
-                    labels.push(x);
-                    pieData.push(total);
+                this.data.forEach(row => {
+                    const xValue = row[this.xvalues];
+                    const yValue = row[this.yvalues];
+                    labels.push(xValue);
+                    pieData.push(yValue);
                 });
 
                 return {
@@ -54,10 +36,35 @@
                         backgroundColor: labels.map(() => randomColor())
                     }]
                 };
-            } else {
-                // For bar and line charts, create datasets per group
+            }
+        }
+
+        class BarChart extends ChartBase {
+            constructor(data, xvalues, yvalues, groupby) {
+                super(data, xvalues, yvalues);
+                this.groupby = groupby;
+            }
+
+            generateChartData() {
+                const groupedData = {};
+                const sortedXValues = new Set();
+
+                this.data.forEach(row => {
+                    const xValue = row[this.xvalues];
+                    const yValue = row[this.yvalues];
+                    const group = this.groupby ? row[this.groupby] : 'default';
+                    if (!groupedData[group]) {
+                        groupedData[group] = {};
+                    }
+                    if (!groupedData[group][xValue]) {
+                        groupedData[group][xValue] = 0;
+                    }
+                    groupedData[group][xValue] += yValue;
+                    sortedXValues.add(xValue);
+                });
+
                 const datasets = Object.keys(groupedData).map(group => {
-                    const data = sortedXValues.map(x => ({
+                    const data = Array.from(sortedXValues).sort().map(x => ({
                         x: x,
                         y: groupedData[group][x] || 0
                     }));
@@ -69,11 +76,23 @@
                     };
                 });
 
-                return { labels: sortedXValues, datasets };
+                return { labels: Array.from(sortedXValues).sort(), datasets };
             }
         }
 
-        // Generate random colors for categories
+        class ChartFactory {
+            static createChart(chartType, data, xvalues, yvalues, groupby = null) {
+                switch (chartType) {
+                    case 'pie':
+                        return new PieChart(data, xvalues, yvalues);
+                    case 'bar':
+                        return new BarChart(data, xvalues, yvalues, groupby);
+                    default:
+                        throw new Error('Unsupported chart type');
+                }
+            }
+        }
+
         function randomColor() {
             const r = Math.floor(Math.random() * 256);
             const g = Math.floor(Math.random() * 256);
@@ -81,11 +100,11 @@
             return `rgba(${r}, ${g}, ${b}, 0.7)`;
         }
 
-        // Fetch and prepare chart data dynamically from the DataTable
         function getChartData() {
             const table = $('#data_table').DataTable();
             const data = table.rows({ filter: 'applied' }).data().toArray();
-            return generateChartData(data, xvalues, yvalues, groupby);
+            const chartDataGenerator = ChartFactory.createChart(chartType, data, xvalues, yvalues, groupby);
+            return chartDataGenerator.generateChartData();
         }
 
         function createChart() {
@@ -96,7 +115,6 @@
                 maintainAspectRatio: false
             };
 
-            // Apply scales configuration only to applicable chart types
             if (['bar', 'line'].includes(chartType)) {
                 chartOptions.scales = {
                     x: { stacked: groupby !== null },
