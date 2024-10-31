@@ -1,118 +1,104 @@
-<!-- STABLE -->
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Dynamic Table</title>
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.20/css/jquery.dataTables.min.css">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
-    <style>
-        #data_table thead select {
-            width: 100%;
-            padding: 5px;
-            margin-top: 5px;
-        }
-        #error-message {
-            color: red;
-            font-weight: bold;
-            display: none;
-        }
-    </style>
-    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
-    <script src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
-    <script>
-    $(document).ready(function() {
-        // Use the injected `data_url` variable to fetch data dynamically
-        fetch("{{ data_url }}")
-        .then(response => response.json())
-        .then(json => {
-            $('#data_table thead').empty();
+<link rel="stylesheet" href="https://cdn.datatables.net/1.10.20/css/jquery.dataTables.min.css">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
+<style>
+    #data_table thead select {
+        width: 100%;
+        padding: 5px;
+        margin-top: 5px;
+    }
+    #error-message {
+        color: red;
+        font-weight: bold;
+        display: none;
+    }
+</style>
+<div id="error-message">Error loading data, please try again later.</div>
+<table id="data_table" class="display">
+    <thead></thead>
+</table>
+<script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+<script>
+$(document).ready(function() {
+    // Fetch data using injected `data_url`
+    fetch("{{ data_url }}")
+    .then(response => response.json())
+    .then(json => {
+        $('#data_table thead').empty();
 
-            // Create header and filter rows
-            var thead = $('#data_table thead');
-            var headerRow = $('<tr></tr>').appendTo(thead);
-            var filterRow = $('<tr></tr>').appendTo(thead);
+        // Create header and filter rows
+        var thead = $('#data_table thead');
+        var filterRow = $('<tr></tr>').appendTo(thead);
 
-            json.columns.forEach(col => {
-                $('<th>').appendTo(filterRow);  // Placeholder for filter dropdown
-            });
+        json.columns.forEach(col => {
+            $('<th>').appendTo(filterRow);
+        });
 
-            // Initialize DataTable with data and columns
-            var table = $('#data_table').DataTable({
-                destroy: true,
-                data: json.data,
-                columns: json.columns,
-                autoWidth: false,
-                searching: true,
-                paging: true,
-                order: [],
-                initComplete: function(settings, json) {
-                    // Dispatch the event to indicate the DataTable is fully loaded
-                    document.dispatchEvent(new CustomEvent('DataTableLoaded'));
+        var table = $('#data_table').DataTable({
+            destroy: true,
+            data: json.data,
+            columns: json.columns,
+            autoWidth: false,
+            searching: true,
+            paging: true,
+            order: [],
+            initComplete: function() {
+                document.dispatchEvent(new CustomEvent('DataTableLoaded'));
             }
         });
 
-            let activeSortColumns = [];
+        let activeSortColumns = [];
+        function applyComplexSorting() {
+            const sortingArray = activeSortColumns
+                .slice()
+                .reverse()
+                .filter(({ state }) => state !== 0)
+                .map(({ index, state }) => [index, state === 1 ? 'asc' : 'desc']);
+            table.order(sortingArray).draw();
+        }
 
-            function applyComplexSorting() {
-                const sortingArray = activeSortColumns
-                    .slice()
-                    .reverse()
-                    .filter(({ state }) => state !== 0)
-                    .map(({ index, state }) => [index, state === 1 ? 'asc' : 'desc']);
-                table.order(sortingArray).draw();
-            }
-
-            $('#data_table thead th').each(function(index) {
-                $(this).off('click').on('click', function() {
-                    const existingIndex = activeSortColumns.findIndex(col => col.index === index);
-
-                    if (existingIndex !== -1) {
-                        activeSortColumns[existingIndex].state = (activeSortColumns[existingIndex].state + 1) % 3;
-                        if (activeSortColumns[existingIndex].state === 0) {
-                            activeSortColumns.splice(existingIndex, 1);
-                        } else {
-                            const [toggledColumn] = activeSortColumns.splice(existingIndex, 1);
-                            activeSortColumns.push(toggledColumn);
-                        }
+        $('#data_table thead th').each(function(index) {
+            $(this).off('click').on('click', function() {
+                const existingIndex = activeSortColumns.findIndex(col => col.index === index);
+                if (existingIndex !== -1) {
+                    activeSortColumns[existingIndex].state = (activeSortColumns[existingIndex].state + 1) % 3;
+                    if (activeSortColumns[existingIndex].state === 0) {
+                        activeSortColumns.splice(existingIndex, 1);
                     } else {
-                        activeSortColumns.push({ index: index, state: 1 });
+                        const [toggledColumn] = activeSortColumns.splice(existingIndex, 1);
+                        activeSortColumns.push(toggledColumn);
                     }
-                    applyComplexSorting();
-                });
+                } else {
+                    activeSortColumns.push({ index: index, state: 1 });
+                }
+                applyComplexSorting();
             });
-
-            table.columns().every(function() {
-                var column = this;
-                var select = $('<select multiple="multiple" style="width: 100%;"><option value="">Filter...</option></select>')
-                    .appendTo(filterRow.find('th').eq(column.index()))
-                    .on('change', function() {
-                        var selectedValues = $(this).val();
-                        if (selectedValues && selectedValues.length > 0) {
-                            var regex = selectedValues.map(val => '^' + $.fn.dataTable.util.escapeRegex(val) + '$').join('|');
-                            column.search(regex, true, false).draw();
-                        } else {
-                            column.search('').draw();
-                        }
-                    });
-
-                column.data().unique().sort().each(function(d) {
-                    select.append('<option value="' + d + '">' + d + '</option>');
-                });
-                select.select2({ placeholder: "Filter..." });
-            });
-        })
-        .catch(error => {
-            console.error('Error loading the data:', error);
-            $('#error-message').show().text('Error loading data, please try again later.');
         });
+
+        table.columns().every(function() {
+            var column = this;
+            var select = $('<select multiple="multiple" style="width: 100%;"><option value="">Filter...</option></select>')
+                .appendTo(filterRow.find('th').eq(column.index()))
+                .on('change', function() {
+                    var selectedValues = $(this).val();
+                    if (selectedValues && selectedValues.length > 0) {
+                        var regex = selectedValues.map(val => '^' + $.fn.dataTable.util.escapeRegex(val) + '$').join('|');
+                        column.search(regex, true, false).draw();
+                    } else {
+                        column.search('').draw();
+                    }
+                });
+
+            column.data().unique().sort().each(function(d) {
+                select.append('<option value="' + d + '">' + d + '</option>');
+            });
+            select.select2({ placeholder: "Filter..." });
+        });
+    })
+    .catch(error => {
+        console.error('Error loading the data:', error);
+        $('#error-message').show();
     });
-    </script>
-</head>
-<body>
-    <table id="data_table" class="display">
-        <thead></thead>
-    </table>
-</body>
-</html>
+});
+</script>
